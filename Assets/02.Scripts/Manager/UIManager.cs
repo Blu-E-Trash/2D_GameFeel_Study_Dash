@@ -1,4 +1,4 @@
-using TMPro; // TextMeshPro 사용
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,7 +14,7 @@ public class UIManager : MonoBehaviour
     public Toggle toggleTeleport;
 
     [Header("UI - Teleport Collision (Radio)")]
-    public CanvasGroup teleportCollisionGroup; // 사진에 질문하신 그 칸입니다!
+    public CanvasGroup teleportCollisionGroup;
     public Toggle togglePushOut;
     public Toggle toggleBlock;
 
@@ -23,7 +23,6 @@ public class UIManager : MonoBehaviour
     public Toggle toggleAfterImage;
     public Toggle toggleTrail;
     public Toggle toggleCamera;
-    // 파티클, 애니메이션 토글 변수 제거됨
 
     [Header("UI - Gameplay (Checkbox)")]
     public Toggle toggleInvincibility;
@@ -34,7 +33,22 @@ public class UIManager : MonoBehaviour
 
     private void Start()
     {
-        // 1. 이벤트 리스너 연결
+        // 1. 시스템 스크립트의 기본값을 읽어와서 UI 토글에 자동 반영
+        toggleActualMovement.isOn = (dashSystem.currentMovementType == DashSystem.MovementType.ActualMovement);
+        toggleTeleport.isOn = (dashSystem.currentMovementType == DashSystem.MovementType.Teleport);
+
+        togglePushOut.isOn = (dashSystem.currentTeleportCollision == DashSystem.TeleportCollisionType.PushOut);
+        toggleBlock.isOn = (dashSystem.currentTeleportCollision == DashSystem.TeleportCollisionType.Block);
+
+        toggleDashSound.isOn = dashFeedback.useDashSound;
+        toggleAfterImage.isOn = dashFeedback.useAfterImage;
+        toggleTrail.isOn = dashFeedback.useTrail;
+        toggleCamera.isOn = dashFeedback.useCameraMovement;
+
+        toggleInvincibility.isOn = playerController.useDashInvincibility;
+        toggleAttackDuringDash.isOn = playerController.useAttackDuringDash;
+
+        // 2. 이벤트 리스너 연결 (UI를 클릭할 때마다 함수가 실행되도록 설정)
         toggleActualMovement.onValueChanged.AddListener(delegate { OnMovementTypeChanged(); });
         toggleTeleport.onValueChanged.AddListener(delegate { OnMovementTypeChanged(); });
 
@@ -45,12 +59,11 @@ public class UIManager : MonoBehaviour
         toggleAfterImage.onValueChanged.AddListener(delegate { OnFeedbackChanged(); });
         toggleTrail.onValueChanged.AddListener(delegate { OnFeedbackChanged(); });
         toggleCamera.onValueChanged.AddListener(delegate { OnFeedbackChanged(); });
-        // 파티클, 애니메이션 리스너 제거됨
 
         toggleInvincibility.onValueChanged.AddListener(delegate { OnGameplayChanged(); });
         toggleAttackDuringDash.onValueChanged.AddListener(delegate { OnGameplayChanged(); });
 
-        // 2. 시작 시 초기 UI 상태 동기화
+        // 3. UI 상태에 맞게 게임 로직을 한 번 더 확실하게 동기화 및 패널 비활성화 등 처리
         OnMovementTypeChanged();
         OnTeleportCollisionChanged();
         OnFeedbackChanged();
@@ -93,7 +106,6 @@ public class UIManager : MonoBehaviour
         dashFeedback.useAfterImage = toggleAfterImage.isOn;
         dashFeedback.useTrail = toggleTrail.isOn;
         dashFeedback.useCameraMovement = toggleCamera.isOn;
-        // 파티클, 애니메이션 전달 로직 제거됨
     }
 
     private void OnGameplayChanged()

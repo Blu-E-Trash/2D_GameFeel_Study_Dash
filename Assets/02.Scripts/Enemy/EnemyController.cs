@@ -22,7 +22,7 @@ public class EnemyController : MonoBehaviour
     public Collider2D attackHitbox;            // 실제 타격 판정 트리거
 
     [Header("Feedback")]
-    public Color hitFlashColor = Color.white;  // 피격 시 번쩍일 색상
+    public Color hitFlashColor = Color.blue;  // 피격 시 번쩍일 색상
     private Color originalVisualColor;
 
     private void Start()
@@ -80,19 +80,6 @@ public class EnemyController : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
-    {
-        if (other.CompareTag("Player"))
-        {
-            PlayerController player = other.GetComponent<PlayerController>();
-            if (player != null)
-            {
-                bool isUndodgeable = (currentAttackType == AttackType.Undodgeable);
-                player.TakeDamage(isUndodgeable);
-            }
-        }
-    }
-
     public void TakeDamageFromPlayer()
     {
         Debug.Log("적: 플레이어의 대시 공격에 피격당했습니다!");
@@ -105,7 +92,7 @@ public class EnemyController : MonoBehaviour
     private IEnumerator HitFlashRoutine()
     {
         visualSprite.color = hitFlashColor;
-        yield return new WaitForSeconds(0.1f);
+        yield return new WaitForSeconds(0.5f);
         visualSprite.color = originalVisualColor;
     }
 }

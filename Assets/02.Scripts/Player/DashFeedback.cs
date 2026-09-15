@@ -1,6 +1,6 @@
 using System.Collections;
+using Unity.Cinemachine;
 using UnityEngine;
-// using Unity.Cinemachine; // (이전에 주석 처리하셨다면 그대로 주석 유지)
 
 public class DashFeedback : MonoBehaviour
 {
@@ -16,7 +16,7 @@ public class DashFeedback : MonoBehaviour
     public AudioSource audioSource;
     public AudioClip dashClip;
     public TrailRenderer trailRenderer;
-    // public CinemachineImpulseSource cameraImpulse; // (이전에 주석 처리하셨다면 그대로 주석 유지)
+    public CinemachineImpulseSource cameraImpulse;
 
     [Header("After Image Settings")]
     public float afterImageInterval = 0.05f;
@@ -65,7 +65,7 @@ public class DashFeedback : MonoBehaviour
         // 3. 카메라 무브먼트 (화면 흔들림)
         if (useCameraMovement)
         {
-            // if (cameraImpulse != null) cameraImpulse.GenerateImpulse();
+            if (cameraImpulse != null) cameraImpulse.GenerateImpulse();
             Debug.Log("카메라 피드백 작동");
         }
 
