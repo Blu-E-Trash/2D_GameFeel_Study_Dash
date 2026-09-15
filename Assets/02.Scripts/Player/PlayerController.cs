@@ -43,12 +43,14 @@ public class PlayerController : MonoBehaviour
     {
         dashSystem.OnDashStart += HandleDashStart;
         dashSystem.OnDashEnd += HandleDashEnd;
+        dashSystem.OnTeleport += HandleTeleport;
     }
 
     private void OnDisable()
     {
         dashSystem.OnDashStart -= HandleDashStart;
         dashSystem.OnDashEnd -= HandleDashEnd;
+        dashSystem.OnTeleport -= HandleTeleport;
     }
 
     private void Update()
@@ -91,6 +93,19 @@ public class PlayerController : MonoBehaviour
     {
         IsCurrentlyInvincible = false;
         if (dashAttackArea != null) dashAttackArea.enabled = false;
+    }
+    private void HandleTeleport(Vector2 origin, Vector2 dir, float dist)
+    {
+        // 대시 중 공격 옵션이 켜져 있을 때만 실행
+        if (useAttackDuringDash && dashAttackArea != null)
+        {
+            DashAttackArea attackArea = dashAttackArea.GetComponent<DashAttackArea>();
+            if (attackArea != null)
+            {
+                // DashAttackArea에게 지나온 궤적을 휩쓸어서 공격하라고 명령!
+                attackArea.SweepAttack(origin, dir, dist);
+            }
+        }
     }
 
     // --- 수정된 피격 및 회피 판정 로직 ---

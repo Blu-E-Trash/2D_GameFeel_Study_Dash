@@ -22,6 +22,7 @@ public class DashSystem : MonoBehaviour
 
     public event Action OnDashStart;
     public event Action OnDashEnd;
+    public event Action<Vector2, Vector2, float> OnTeleport;
 
     private Rigidbody2D rb;
     private BoxCollider2D boxCol;
@@ -81,51 +82,44 @@ public class DashSystem : MonoBehaviour
         rb.gravityScale = originalGravity;
     }
 
-    // --- 수정된 순간이동 및 충돌 처리 로직 ---
     private void TeleportDash(Vector2 direction)
     {
         Vector2 origin = rb.position;
         Vector2 size = boxCol.size;
-
-        // 대시가 끝났을 때 플레이어가 서있을 '목표 위치'
         Vector2 targetPos = origin + (direction * dashDistance);
+
+        float actualDistance = dashDistance; // 실제 이동할 거리 저장용 변수 추가
 
         if (currentTeleportCollision == TeleportCollisionType.Block)
         {
-            // [Block]: 경로 전체를 검사. 얇은 벽이든 두꺼운 벽이든 무조건 부딪힌 벽 바로 앞에 멈춤.
             RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, direction, dashDistance, obstacleLayer);
-
             if (hit.collider != null)
             {
-                float safeDistance = Mathf.Max(0f, hit.distance - 0.01f); // 벽 앞 위치 계산
+                float safeDistance = Mathf.Max(0f, hit.distance - 0.01f);
                 rb.position = origin + (direction * safeDistance);
+                actualDistance = safeDistance; // 벽에 막혔으니 거리를 갱신
             }
-            else
-            {
-                rb.position = targetPos; // 부딪힌 게 없으면 정상 이동
-            }
+            else rb.position = targetPos;
         }
         else if (currentTeleportCollision == TeleportCollisionType.PushOut)
         {
-            // [Push Out]: 목표 위치에 벽이 있는지만 검사. 약간 작게 검사하여 테두리 끼임 방지
             Vector2 checkSize = size * 0.95f;
             Collider2D overlapCol = Physics2D.OverlapBox(targetPos, checkSize, 0f, obstacleLayer);
-
             if (overlapCol != null)
             {
-                // 목표 위치가 두꺼운 벽 안쪽이라면, 진입한 벽면 바로 앞으로 밀어냄(Push Out)
                 RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, direction, dashDistance, obstacleLayer);
                 if (hit.collider != null)
                 {
                     float safeDistance = Mathf.Max(0f, hit.distance - 0.01f);
                     rb.position = origin + (direction * safeDistance);
+                    actualDistance = safeDistance; // 벽 바깥으로 밀려났으니 거리를 갱신
                 }
             }
-            else
-            {
-                // 목표 위치가 비어있다면 그대로 텔레포트 (경로상의 얇은 벽 관통 성공!)
-                rb.position = targetPos;
-            }
+            else rb.position = targetPos;
         }
+
+        // --- 함수의 맨 마지막에 아래 이벤트 실행 코드 추가 ---
+        // 텔레포트가 완료되면, 어디서, 어느 방향으로, 얼만큼 이동했는지 방송합니다.
+        OnTeleport?.Invoke(origin, direction, actualDistance);
     }
 }

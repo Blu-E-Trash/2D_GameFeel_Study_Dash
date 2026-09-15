@@ -716,7 +716,7 @@ GameObject:
   - component: {fileID: 341325921}
   m_Layer: 0
   m_Name: AttackTelegraph
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5018,7 +5018,7 @@ GameObject:
   - component: {fileID: 1808447935}
   m_Layer: 0
   m_Name: AttackRangeVisual
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5724,7 +5724,7 @@ GameObject:
   - component: {fileID: 1988010978}
   m_Layer: 0
   m_Name: Visual
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -6199,7 +6199,7 @@ GameObject:
   - component: {fileID: 2139451787}
   m_Layer: 0
   m_Name: AttackHitBox
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
