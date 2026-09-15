@@ -4742,7 +4742,7 @@ MonoBehaviour:
   dashSystem: {fileID: 923518867}
   playerSprite: {fileID: 1675028940}
   audioSource: {fileID: 1675028942}
-  dashClip: {fileID: 0}
+  dashClip: {fileID: 8300000, guid: c67ce5541a58ee24b9fbbea6867839c5, type: 3}
   trailRenderer: {fileID: 1675028941}
   cameraImpulse: {fileID: 1675028944}
   afterImageInterval: 0.05
