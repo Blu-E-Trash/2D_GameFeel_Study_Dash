@@ -1,9 +1,13 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
 public class EnemyController : MonoBehaviour
 {
     public enum AttackType { Normal, Undodgeable }
+
+    // 어떤 적이든 대시 공격에 맞으면 발생. 테스트 카운터가 구독한다.
+    public static event Action<EnemyController> OnAnyEnemyHit;
 
     [Header("Enemy Attack Settings")]
     public float idleTime = 2f;          // 대기 시간
@@ -83,6 +87,7 @@ public class EnemyController : MonoBehaviour
     public void TakeDamageFromPlayer()
     {
         Debug.Log("적: 플레이어의 대시 공격에 피격당했습니다!");
+        OnAnyEnemyHit?.Invoke(this);
         if (visualSprite != null)
         {
             StartCoroutine(HitFlashRoutine());

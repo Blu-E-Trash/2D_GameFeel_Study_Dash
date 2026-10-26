@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using TMPro; // UI 텍스트 사용을 위해 추가
 using UnityEngine;
@@ -24,6 +25,9 @@ public class PlayerController : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     public bool IsCurrentlyInvincible { get; private set; } = false;
+
+    // 회피 판정 결과 (true = 회피 성공). 테스트 카운터가 구독한다.
+    public event Action<bool> OnDodgeResult;
     private float facingDirection = 1f;
     private Coroutine dodgeUICoroutine; // UI 켜짐/꺼짐 코루틴 관리용
 
@@ -124,6 +128,8 @@ public class PlayerController : MonoBehaviour
 
     private void ShowDodgeResult(bool isSuccess)
     {
+        OnDodgeResult?.Invoke(isSuccess);
+
         if (dodgeUIPanel == null || dodgeText == null) return;
 
         if (dodgeUICoroutine != null) StopCoroutine(dodgeUICoroutine);

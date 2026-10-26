@@ -14,6 +14,9 @@ public class DashSystem : MonoBehaviour
     public float dashCooldown = 0.6f;
     public LayerMask obstacleLayer;
 
+    [Tooltip("순간이동 충돌 검사용 상자를 이만큼 안쪽으로 줄입니다. 발밑 바닥(같은 Obstacle 레이어)이 0거리 충돌로 잡히는 것을 막습니다.")]
+    public float collisionSkin = 0.05f;
+
     [Header("Current Options (Controlled by UI)")]
     public MovementType currentMovementType = MovementType.ActualMovement;
     public TeleportCollisionType currentTeleportCollision = TeleportCollisionType.PushOut;
@@ -27,6 +30,9 @@ public class DashSystem : MonoBehaviour
     private Rigidbody2D rb;
     private BoxCollider2D boxCol;
     private float originalGravity;
+
+    private const float SafetyGap = 0.01f;      // 벽 앞에 남기는 여유 거리
+    private const float PushOutSearchStep = 0.05f;
 
     private void Awake()
     {
@@ -85,41 +91,77 @@ public class DashSystem : MonoBehaviour
     private void TeleportDash(Vector2 direction)
     {
         Vector2 origin = rb.position;
-        Vector2 size = boxCol.size;
-        Vector2 targetPos = origin + (direction * dashDistance);
 
-        float actualDistance = dashDistance; // 실제 이동할 거리 저장용 변수 추가
+        // 콜라이더의 실제 월드 크기·중심(오프셋, 스케일 반영)을 기준으로 검사하고,
+        // 바닥에 닿지 않도록 skin만큼 줄인 상자를 사용한다.
+        Bounds bounds = boxCol.bounds;
+        Vector2 castOrigin = bounds.center;
+        Vector2 castSize = (Vector2)bounds.size - Vector2.one * (collisionSkin * 2f);
+
+        float actualDistance = dashDistance;
 
         if (currentTeleportCollision == TeleportCollisionType.Block)
         {
-            RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, direction, dashDistance, obstacleLayer);
-            if (hit.collider != null)
-            {
-                float safeDistance = Mathf.Max(0f, hit.distance - 0.01f);
-                rb.position = origin + (direction * safeDistance);
-                actualDistance = safeDistance; // 벽에 막혔으니 거리를 갱신
-            }
-            else rb.position = targetPos;
+            // 경로 전체 검사: 장애물이 있으면 그 앞에서 멈춤
+            if (TryGetBlockingDistance(castOrigin, castSize, direction, dashDistance, out float hitDistance))
+                actualDistance = ToSafeDistance(hitDistance);
         }
-        else if (currentTeleportCollision == TeleportCollisionType.PushOut)
+        else // PushOut
         {
-            Vector2 checkSize = size * 0.95f;
-            Collider2D overlapCol = Physics2D.OverlapBox(targetPos, checkSize, 0f, obstacleLayer);
-            if (overlapCol != null)
+            // 도착 지점만 검사: 비어 있으면 중간의 얇은 벽은 통과
+            Vector2 targetCenter = castOrigin + direction * dashDistance;
+            if (Physics2D.OverlapBox(targetCenter, castSize, 0f, obstacleLayer) != null)
             {
-                RaycastHit2D hit = Physics2D.BoxCast(origin, size, 0f, direction, dashDistance, obstacleLayer);
-                if (hit.collider != null)
-                {
-                    float safeDistance = Mathf.Max(0f, hit.distance - 0.01f);
-                    rb.position = origin + (direction * safeDistance);
-                    actualDistance = safeDistance; // 벽 바깥으로 밀려났으니 거리를 갱신
-                }
+                if (TryGetBlockingDistance(castOrigin, castSize, direction, dashDistance, out float hitDistance))
+                    actualDistance = ToSafeDistance(hitDistance);
+                else
+                    actualDistance = FindFreeDistanceBackward(castOrigin, castSize, direction, dashDistance);
             }
-            else rb.position = targetPos;
         }
 
-        // --- 함수의 맨 마지막에 아래 이벤트 실행 코드 추가 ---
+        rb.position = origin + direction * actualDistance;
+
+        // 순간이동 직전의 이동 속도가 남아 대시 시간 동안 추가로 미끄러지지 않도록 수평 속도 제거
+        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
+
         // 텔레포트가 완료되면, 어디서, 어느 방향으로, 얼만큼 이동했는지 방송합니다.
         OnTeleport?.Invoke(origin, direction, actualDistance);
+    }
+
+    // 진행 방향을 마주 보는 장애물 면만 '막힘'으로 인정한다. (발밑 바닥처럼 옆으로 스치는 면은 무시)
+    private bool TryGetBlockingDistance(Vector2 castOrigin, Vector2 castSize, Vector2 direction, float distance, out float hitDistance)
+    {
+        RaycastHit2D[] hits = Physics2D.BoxCastAll(castOrigin, castSize, 0f, direction, distance, obstacleLayer);
+        Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+        foreach (RaycastHit2D hit in hits)
+        {
+            if (hit.collider == null) continue;
+            if (Vector2.Dot(hit.normal, direction) > -0.5f) continue;
+
+            hitDistance = hit.distance;
+            return true;
+        }
+
+        hitDistance = 0f;
+        return false;
+    }
+
+    // 검사 상자는 skin만큼 작으므로, 실제 콜라이더 앞면 기준으로 거리를 되돌린다.
+    private float ToSafeDistance(float castHitDistance)
+    {
+        return Mathf.Max(0f, castHitDistance - collisionSkin - SafetyGap);
+    }
+
+    // 예비 처리: 도착 지점이 막혀 있는데 경로 검사에서 원인을 못 찾은 경우,
+    // 도착 지점에서 출발점 쪽으로 조금씩 되돌아오며 처음으로 비어 있는 위치를 찾는다.
+    private float FindFreeDistanceBackward(Vector2 castOrigin, Vector2 castSize, Vector2 direction, float distance)
+    {
+        for (float d = distance; d > 0f; d -= PushOutSearchStep)
+        {
+            if (Physics2D.OverlapBox(castOrigin + direction * d, castSize, 0f, obstacleLayer) == null)
+                return d;
+        }
+        return 0f;
     }
 }
